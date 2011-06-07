@@ -21,7 +21,7 @@ def parse(uri)
     MARK.each do |k, v|
       dst4[0].gsub!(k, v)
     end
-    dst3[dst4[0]] = dst4[1].gsub('ノンステップ','')
+    dst3[dst4[0]] = dst4[1].gsub(/\(ノンステ.*\)/,'')
   end
   res['destination'] = dst3
   
