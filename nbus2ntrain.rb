@@ -5,6 +5,7 @@ require 'open-uri'
 require 'pp'
 
 HEAD = ['WDAY', 'SAT', 'SUN']
+MARK = {'無印' => 'a','〇' => 'b','△' => 'c','×' => 'd','◎' => 'e','■' => 'f'}
 
 def parse(uri)
   res = {}
@@ -17,8 +18,10 @@ def parse(uri)
   dst3 = {}
   dst2.each do |s|
     dst4 = s.split("・・・")
-    k = dst4[0].gsub('無印','a').gsub('〇','b').gsub('△','c')
-    dst3[k] = dst4[1].gsub('ノンステップ','')
+    MARK.each do |k, v|
+      dst4[0].gsub!(k, v)
+    end
+    dst3[dst4[0]] = dst4[1].gsub('ノンステップ','')
   end
   res['destination'] = dst3
   
@@ -37,7 +40,10 @@ def parse(uri)
       mm2 = mm1[j].search("td")
       mm3 = []
       for k in 0 .. mm2.size - 1
-        mm4 = mm2[k].inner_text.gsub('〇','b').gsub('△','c')
+        mm4 = mm2[k].inner_text
+        MARK.each do |k, v|
+          mm4.gsub!(k, v)
+        end
         mm4 = "a" + mm4 if mm4 =~ /^[0-9]+$/
         mm3 << mm4
       end
