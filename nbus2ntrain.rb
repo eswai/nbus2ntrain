@@ -12,25 +12,30 @@ def parse(uri)
   doc = Hpricot.parse(open(uri, "r:sjis").read.encode("utf-8", :invalid => :replace, :undef => :replace))
   res['name'] = doc.search("th[text()='停留所名']")[0].next.at('b').inner_text.strip
   res['category'] = doc.search("th[text()='系統']")[0].next.at('a').inner_text.strip
-  
-  # 行き先をパースする
+  res['destination'] = destination(doc)
+  res['table'] = ttable(doc)
+  res
+end
+
+def destination(doc)
   dst1 = doc.search("th[text()='行き先']")[0].next.inner_text.strip
   dst2 = dst1.split("\n")
   dst3 = {}
-  res['destination'] = dst3
   
-  mark2 = {} # ◯とaの対応テーブル
+  @dmark = {} # ◯とaの対応テーブル
   i = 0
   dst2.each do |s|
     dst4 = s.split("・・・")
     next if dst4.size < 2
-    mark2[dst4[0]] = MARK[i]
+    @dmark[dst4[0]] = MARK[i]
     dst3[MARK[i]] = dst4[1].gsub(/\(ノンステ.*\)/,'')
     i += 1
   end
-  
+  dst3
+end
+
+def ttable(doc)
   rtab = {}
-  res['table'] = rtab
   HEAD.each do |h|
     rtab[h] = {}
   end
@@ -44,18 +49,22 @@ def parse(uri)
       key = hh[j].inner_text
       mm2 = mm1[j].search("td")
       next if mm2.inner_text.size < 1 # 空欄の時刻は飛ばす
-      mm3 = []
-      rtab[HEAD[j]].store(key, mm3)
-      mm2.each do |m| # 分ごとに
-        mm4 = m.inner_text
-        mm_num = mm4.scan(/([0-9]+)/).flatten[0]
-        mm_mrk = mm4.scan(/([^0-9]+)/).flatten[0]
-        mm_mrk ||= '無印'
-        mm3 << mark2[mm_mrk] + mm_num
-      end
+      rtab[HEAD[j]].store(key, minutes(mm2))
     end
   end
-  res
+  rtab
+end
+
+def minutes(doc)
+  mm3 = []
+  doc.each do |m| # 分ごとに
+    mm4 = m.inner_text
+    mm_num = mm4.scan(/([0-9]+)/).flatten[0]
+    mm_mrk = mm4.scan(/([^0-9]+)/).flatten[0]
+    mm_mrk ||= '無印'
+    mm3 << @dmark[mm_mrk] + mm_num
+  end
+  mm3
 end
 
 def nexttrain(hsh)
